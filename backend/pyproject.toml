@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lecturelens-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  # --- Web / API ---
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic[email]>=2",
+  "pydantic-settings",
+  "python-multipart",          # multipart upload
+  # --- DB ---
+  "sqlalchemy>=2",
+  "alembic",
+  "asyncpg",                   # async postgres driver
+  "psycopg[binary]",           # sync driver for alembic
+  # --- Auth / security ---
+  "python-jose[cryptography]", # JWT
+  "passlib[bcrypt]",
+  "slowapi",                   # rate limiting
+  # --- Queue ---
+  "arq",
+  "redis",
+  # --- Phase 1 ML (semantic search MVP) ---
+  "faster-whisper",
+  "sentence-transformers",
+  "faiss-cpu",
+  "numpy",
+  # --- Media / validation ---
+  "ffmpeg-python",
+  "python-magic-bin; platform_system == 'Windows'",  # magic bytes (Win wheel)
+  "python-magic; platform_system != 'Windows'",
+  "mutagen",                   # audio metadata
+]
+
+[project.optional-dependencies]
+# Phase 2 — diarization, YouTube, topics
+phase2 = [
+  "pyannote.audio",
+  "yt-dlp",
+  "keybert",
+]
+# Phase 3 — optimization + persistent vector store
+phase3 = [
+  "onnxruntime",
+  "qdrant-client",
+]
+# Dev / test / lint (always installed locally + in CI)
+dev = [
+  "pytest",
+  "pytest-cov",
+  "pytest-asyncio",
+  "httpx",                     # async test client
+  "ruff",
+  "black",
+  "mypy",
+  "bandit",                    # security lint (SECURITY.md checklist)
+  "types-passlib",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--cov=app --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.report]
+# Coverage gates (ADR-010: 70% overall, 90% on services/ + api/) are enforced in CI
+# via --cov-fail-under once real code exists. Not wired on the empty skeleton.
