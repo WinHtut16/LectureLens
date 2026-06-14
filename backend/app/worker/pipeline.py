@@ -34,9 +34,7 @@ async def process_recording(ctx: dict, recording_id: str) -> None:
 
     async with SessionLocal() as session:
         try:
-            recording = await session.scalar(
-                select(Recording).where(Recording.id == rec_uuid)
-            )
+            recording = await session.scalar(select(Recording).where(Recording.id == rec_uuid))
             if recording is None:
                 logger.error("process_recording: recording %s not found", recording_id)
                 return

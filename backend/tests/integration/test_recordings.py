@@ -28,9 +28,7 @@ _VALID_RESULT = AudioValidationResult(valid=True, error=None, detected_mime="aud
 
 
 async def _signup_and_token(client: AsyncClient, email: str, password: str = "password1234") -> str:
-    resp = await client.post(
-        "/api/v1/auth/signup", json={"email": email, "password": password}
-    )
+    resp = await client.post("/api/v1/auth/signup", json={"email": email, "password": password})
     assert resp.status_code == 201, resp.text
     return resp.json()["token"]
 
@@ -141,17 +139,13 @@ async def test_get_other_users_recording_returns_403(http_client: AsyncClient):
     alice_rec_id = alice_data["id"]
 
     # Bob tries to access Alice's recording
-    resp = await http_client.get(
-        f"/api/v1/recordings/{alice_rec_id}", headers=_auth(bob_token)
-    )
+    resp = await http_client.get(f"/api/v1/recordings/{alice_rec_id}", headers=_auth(bob_token))
     assert resp.status_code == 403
 
 
 async def test_get_nonexistent_recording_returns_404(http_client: AsyncClient):
     token = await _signup_and_token(http_client, "missing@test.com")
-    resp = await http_client.get(
-        f"/api/v1/recordings/{uuid.uuid4()}", headers=_auth(token)
-    )
+    resp = await http_client.get(f"/api/v1/recordings/{uuid.uuid4()}", headers=_auth(token))
     assert resp.status_code == 404
 
 
@@ -165,9 +159,7 @@ async def test_status_poll_returns_queued_immediately_after_upload(http_client: 
     data, _ = await _upload(http_client, token)
     rec_id = data["id"]
 
-    resp = await http_client.get(
-        f"/api/v1/recordings/{rec_id}/status", headers=_auth(token)
-    )
+    resp = await http_client.get(f"/api/v1/recordings/{rec_id}/status", headers=_auth(token))
     assert resp.status_code == 200
     body = resp.json()
     assert body["id"] == rec_id
@@ -184,9 +176,7 @@ async def test_delete_own_recording_returns_204_and_removes_from_list(http_clien
     data, _ = await _upload(http_client, token, "todelete.mp3")
     rec_id = data["id"]
 
-    resp = await http_client.delete(
-        f"/api/v1/recordings/{rec_id}", headers=_auth(token)
-    )
+    resp = await http_client.delete(f"/api/v1/recordings/{rec_id}", headers=_auth(token))
     assert resp.status_code == 204
 
     list_resp = await http_client.get("/api/v1/recordings", headers=_auth(token))
@@ -202,13 +192,9 @@ async def test_delete_other_users_recording_returns_403(http_client: AsyncClient
     alice_rec_id = alice_data["id"]
 
     # Bob tries to delete Alice's recording
-    resp = await http_client.delete(
-        f"/api/v1/recordings/{alice_rec_id}", headers=_auth(bob_token)
-    )
+    resp = await http_client.delete(f"/api/v1/recordings/{alice_rec_id}", headers=_auth(bob_token))
     assert resp.status_code == 403
 
     # Alice's recording still exists
-    check = await http_client.get(
-        f"/api/v1/recordings/{alice_rec_id}", headers=_auth(alice_token)
-    )
+    check = await http_client.get(f"/api/v1/recordings/{alice_rec_id}", headers=_auth(alice_token))
     assert check.status_code == 200

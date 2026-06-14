@@ -11,13 +11,13 @@ import magic
 # MIME types accepted for upload
 _ALLOWED_MIMES: frozenset[str] = frozenset(
     {
-        "audio/mpeg",       # mp3
-        "audio/wav",        # wav
-        "audio/x-wav",      # wav (alternate)
-        "audio/mp4",        # m4a
-        "audio/x-m4a",      # m4a (alternate)
-        "audio/ogg",        # ogg
-        "audio/vnd.wave",   # wav (some libmagic versions)
+        "audio/mpeg",  # mp3
+        "audio/wav",  # wav
+        "audio/x-wav",  # wav (alternate)
+        "audio/mp4",  # m4a
+        "audio/x-m4a",  # m4a (alternate)
+        "audio/ogg",  # ogg
+        "audio/vnd.wave",  # wav (some libmagic versions)
     }
 )
 

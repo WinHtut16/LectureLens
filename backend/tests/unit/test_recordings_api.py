@@ -12,7 +12,6 @@ from app.db.models import Recording, RecordingStatus, SourceType, User
 from app.main import app
 from app.ml.audio_validator import AudioValidationResult
 
-
 # ---------------------------------------------------------------------------
 # Factories
 # ---------------------------------------------------------------------------
@@ -161,9 +160,7 @@ async def test_list_recordings_returns_only_current_users(client: AsyncClient, a
     app.dependency_overrides[get_current_user] = lambda: alice
     recs = [_make_recording(alice, "a.mp3"), _make_recording(alice, "b.mp3")]
 
-    with patch(
-        "app.api.recordings.svc.list_recordings", new_callable=AsyncMock, return_value=recs
-    ):
+    with patch("app.api.recordings.svc.list_recordings", new_callable=AsyncMock, return_value=recs):
         resp = await client.get("/api/v1/recordings")
 
     assert resp.status_code == 200
@@ -184,9 +181,7 @@ async def test_get_recording_returns_200(client: AsyncClient, alice: User):
     app.dependency_overrides[get_current_user] = lambda: alice
     rec = _make_recording(alice)
 
-    with patch(
-        "app.api.recordings.svc.get_recording", new_callable=AsyncMock, return_value=rec
-    ):
+    with patch("app.api.recordings.svc.get_recording", new_callable=AsyncMock, return_value=rec):
         resp = await client.get(f"/api/v1/recordings/{rec.id}")
 
     assert resp.status_code == 200

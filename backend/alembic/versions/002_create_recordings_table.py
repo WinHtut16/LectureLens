@@ -17,7 +17,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 sourcetype_enum = sa.Enum("upload", "youtube", name="sourcetype")
 recordingstatus_enum = sa.Enum(
-    "queued", "transcribing", "diarizing", "embedding", "ready", "failed",
+    "queued",
+    "transcribing",
+    "diarizing",
+    "embedding",
+    "ready",
+    "failed",
     name="recordingstatus",
 )
 

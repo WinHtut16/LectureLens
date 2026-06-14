@@ -37,9 +37,7 @@ async def create_recording(
 
 async def list_recordings(db: AsyncSession, *, user_id: uuid.UUID) -> list[Recording]:
     result = await db.execute(
-        select(Recording)
-        .where(Recording.user_id == user_id)
-        .order_by(Recording.created_at.desc())
+        select(Recording).where(Recording.user_id == user_id).order_by(Recording.created_at.desc())
     )
     return list(result.scalars().all())
 
