@@ -27,13 +27,14 @@ async def get_current_user(
         )
     try:
         user_id = decode_access_token(credentials.credentials)
-    except JWTError:
+        user_id_uuid = uuid.UUID(user_id)
+    except (JWTError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "invalid_token", "message": "Invalid or expired token"},
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user = await db.scalar(select(User).where(User.id == uuid.UUID(user_id)))
+    user = await db.scalar(select(User).where(User.id == user_id_uuid))
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
