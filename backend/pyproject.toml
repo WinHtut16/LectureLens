@@ -78,8 +78,11 @@ strict = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-addopts = "--cov=app --cov-report=term-missing"
+addopts = "--cov=app --cov-report=term-missing -m 'not slow'"
 testpaths = ["tests"]
+markers = [
+  "slow: marks tests as slow — real model load; excluded from default run",
+]
 
 [tool.coverage.report]
 # Coverage gates (ADR-010: 70% overall, 90% on services/ + api/) are enforced in CI
