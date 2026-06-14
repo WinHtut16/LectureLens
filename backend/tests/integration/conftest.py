@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
-from app.db import models  # noqa: F401 — registers User table with Base.metadata
+from app.db import models  # noqa: F401 — registers all tables with Base.metadata
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
@@ -33,6 +33,9 @@ async def setup_and_clean_db():
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with _test_engine.begin() as conn:
+        # Delete child rows first (FK: recordings.user_id → users.id CASCADE, but explicit order
+        # keeps things predictable if CASCADE is not wired in the test DB).
+        await conn.execute(text("DELETE FROM recordings"))
         await conn.execute(text("DELETE FROM users"))
 
 

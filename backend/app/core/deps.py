@@ -1,4 +1,5 @@
 import uuid
+from functools import lru_cache
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -6,7 +7,9 @@ from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import decode_access_token
+from app.core.storage import StorageClient, make_storage_client
 from app.db.models import User
 from app.db.session import get_db
 
@@ -42,3 +45,12 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+@lru_cache(maxsize=1)
+def _storage_singleton() -> StorageClient:
+    return make_storage_client(settings)
+
+
+def get_storage() -> StorageClient:
+    return _storage_singleton()

@@ -35,6 +35,7 @@ dependencies = [
   "python-magic-bin; platform_system == 'Windows'",  # magic bytes (Win wheel)
   "python-magic; platform_system != 'Windows'",
   "mutagen",                   # audio metadata
+  "boto3",                     # S3-compatible object storage (Supabase/R2) — see ADR-012
 ]
 
 [project.optional-dependencies]

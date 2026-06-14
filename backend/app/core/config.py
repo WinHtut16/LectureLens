@@ -27,5 +27,19 @@ class Settings(BaseSettings):
     # CORS
     CORS_ALLOW_ORIGINS: str = "http://localhost:3000"
 
+    # Redis / ARQ
+    REDIS_URL: str = "redis://localhost:6379"
+
+    # Object storage
+    STORAGE_BACKEND: str = "local"  # "local" | "s3"
+    LOCAL_STORAGE_PATH: str = "/tmp/lecturelens"
+    S3_BUCKET: str = ""
+    S3_ENDPOINT: str = ""
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+
+    # Upload limits
+    MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB
+
 
 settings = Settings()

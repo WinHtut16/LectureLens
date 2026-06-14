@@ -213,6 +213,25 @@ Scaffolding the repo required two packaging choices not fixed by CLAUDE.md. (1) 
 
 ---
 
+## ADR-012: boto3 (in asyncio.to_thread) for S3-compatible object storage
+
+**Date:** 2026-06-14
+**Status:** Accepted
+
+### Context
+The Recordings slice needs object storage for audio files. CLAUDE.md names Supabase Storage and Cloudflare R2 as targets — both are S3-compatible. A storage client abstraction is needed so local dev writes to disk while production hits S3.
+
+### Decision
+Use **boto3** (the standard AWS/S3-compatible SDK) wrapped in `asyncio.to_thread()` to keep the API async without adding another dependency. The `StorageClient` ABC hides the backend; `LocalStorageClient` handles dev/CI, `S3StorageClient` handles prod. Swapped via `STORAGE_BACKEND` config.
+
+### Consequences
+- No new async-specific S3 library (aiobotocore) needed; boto3 is battle-tested and already a transitive dep of many packages.
+- `asyncio.to_thread()` overhead is negligible for file upload/delete frequency (not a hot path).
+- The ABC makes the S3 client mockable/substitutable in unit tests without hitting real storage.
+- If throughput ever matters, swapping to aiobotocore behind the same ABC is a one-file change.
+
+---
+
 ## ADR Template
 
 ```
