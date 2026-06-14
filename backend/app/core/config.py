@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     S3_ACCESS_KEY: str = ""
     S3_SECRET_KEY: str = ""
 
+    # ML
+    WHISPER_MODEL_SIZE: str = "base"
+
     # Upload limits
     MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB
 
