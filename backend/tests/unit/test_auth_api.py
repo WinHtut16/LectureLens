@@ -24,10 +24,13 @@ def _make_user(email: str = "test@example.com") -> User:
 
 # ---- /signup ----
 
+
 @pytest.mark.asyncio
 async def test_signup_returns_201_with_token_and_no_password_fields(client: AsyncClient):
     user = _make_user(email="new@example.com")
-    with patch("app.api.auth.auth_service.signup", new_callable=AsyncMock, return_value=("tok123", user)):
+    with patch(
+        "app.api.auth.auth_service.signup", new_callable=AsyncMock, return_value=("tok123", user)
+    ):
         resp = await client.post(
             "/api/v1/auth/signup",
             json={"email": "new@example.com", "password": "validpassword1"},
@@ -66,10 +69,13 @@ async def test_signup_password_under_10_chars_returns_422(client: AsyncClient):
 
 # ---- /login ----
 
+
 @pytest.mark.asyncio
 async def test_login_returns_200_with_token(client: AsyncClient):
     user = _make_user()
-    with patch("app.api.auth.auth_service.login", new_callable=AsyncMock, return_value=("tok456", user)):
+    with patch(
+        "app.api.auth.auth_service.login", new_callable=AsyncMock, return_value=("tok456", user)
+    ):
         resp = await client.post(
             "/api/v1/auth/login",
             json={"email": "test@example.com", "password": "correctpassword"},
@@ -111,6 +117,7 @@ async def test_login_nonexistent_email_returns_401_same_message(client: AsyncCli
 
 
 # ---- /me ----
+
 
 @pytest.mark.asyncio
 async def test_me_valid_token_returns_200_and_user_without_password_hash(client: AsyncClient):

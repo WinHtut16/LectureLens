@@ -19,6 +19,7 @@ def _make_user(email: str = "user@example.com") -> User:
 
 # ---- signup ----
 
+
 @pytest.mark.asyncio
 async def test_signup_happy_path_returns_token_and_user():
     from app.services.auth import signup
@@ -54,6 +55,7 @@ async def test_signup_duplicate_email_raises_400():
 
 
 # ---- login ----
+
 
 @pytest.mark.asyncio
 async def test_login_correct_credentials_returns_token_and_user():
