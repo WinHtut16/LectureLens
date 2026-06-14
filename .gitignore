@@ -1,0 +1,45 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+pnpm-debug.log*
+.vercel
+
+# ---- ML artifacts / data (gitignored per CLAUDE.md) ----
+ml/data/
+*.faiss
+backend/data/
+
+# ---- Audio / local media (never commit recordings) ----
+audios/
+*.wav
+*.mp3
+*.m4a
+*.ogg
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
