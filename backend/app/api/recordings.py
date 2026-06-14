@@ -43,6 +43,17 @@ class RecordingListItem(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SegmentResponse(BaseModel):
+    id: uuid.UUID
+    start_seconds: float
+    end_seconds: float
+    text: str
+    speaker_label: str | None
+    segment_index: int
+
+    model_config = {"from_attributes": True}
+
+
 class RecordingDetailResponse(BaseModel):
     id: uuid.UUID
     title: str
@@ -52,6 +63,7 @@ class RecordingDetailResponse(BaseModel):
     duration_seconds: int | None
     error_message: str | None
     created_at: datetime
+    segments: list[SegmentResponse]
 
     model_config = {"from_attributes": True}
 

@@ -5,6 +5,7 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.storage import StorageClient
 from app.db.models import Recording, RecordingStatus, SourceType
@@ -45,7 +46,11 @@ async def list_recordings(db: AsyncSession, *, user_id: uuid.UUID) -> list[Recor
 async def get_recording(
     db: AsyncSession, *, recording_id: uuid.UUID, user_id: uuid.UUID
 ) -> Recording:
-    recording = await db.scalar(select(Recording).where(Recording.id == recording_id))
+    recording = await db.scalar(
+        select(Recording)
+        .where(Recording.id == recording_id)
+        .options(selectinload(Recording.segments))
+    )
     if recording is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found")
     if recording.user_id != user_id:

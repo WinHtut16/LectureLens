@@ -38,6 +38,7 @@ def _make_recording(user: User, title: str = "lecture.mp3") -> Recording:
     r.status = RecordingStatus.queued
     r.error_message = None
     r.created_at = datetime.now(UTC)
+    r.segments = []  # empty list — loaded via selectinload in real code
     return r
 
 
@@ -185,7 +186,10 @@ async def test_get_recording_returns_200(client: AsyncClient, alice: User):
         resp = await client.get(f"/api/v1/recordings/{rec.id}")
 
     assert resp.status_code == 200
-    assert resp.json()["id"] == str(rec.id)
+    body = resp.json()
+    assert body["id"] == str(rec.id)
+    assert "segments" in body
+    assert body["segments"] == []
 
 
 async def test_get_recording_other_user_returns_403(client: AsyncClient, alice: User):
