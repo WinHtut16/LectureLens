@@ -60,6 +60,7 @@ dev = [
   "mypy",
   "bandit",                    # security lint (SECURITY.md checklist)
   "types-passlib",
+  "types-python-jose",
 ]
 
 [tool.hatch.build.targets.wheel]
