@@ -24,7 +24,7 @@ class FasterWhisperTranscriber:
     def __init__(self, model_size: str = "base") -> None:
         # Lazy import: WhisperModel is heavy; importing at module level would
         # make every unit-test file trigger a model download.
-        from faster_whisper import WhisperModel  # type: ignore[import-untyped]
+        from faster_whisper import WhisperModel  # type: ignore[import-untyped]  # no stubs available
 
         self._model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
