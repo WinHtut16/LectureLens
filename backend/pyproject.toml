@@ -20,7 +20,7 @@ dependencies = [
   "psycopg[binary]",           # sync driver for alembic
   # --- Auth / security ---
   "python-jose[cryptography]", # JWT
-  "passlib[bcrypt]",
+  "bcrypt",
   "slowapi",                   # rate limiting
   # --- Queue ---
   "arq",
@@ -59,7 +59,6 @@ dev = [
   "black",
   "mypy",
   "bandit",                    # security lint (SECURITY.md checklist)
-  "types-passlib",
   "types-python-jose",
 ]
 
