@@ -32,7 +32,9 @@ class Settings(BaseSettings):
 
     # Object storage
     STORAGE_BACKEND: str = "local"  # "local" | "s3"
-    LOCAL_STORAGE_PATH: str = "/tmp/lecturelens"  # nosec B108 — dev default, overridden by env var in prod
+    LOCAL_STORAGE_PATH: str = (
+        "/tmp/lecturelens"  # nosec B108 — dev default, overridden by env var in prod
+    )
     S3_BUCKET: str = ""
     S3_ENDPOINT: str = ""
     S3_ACCESS_KEY: str = ""
