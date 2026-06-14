@@ -2,8 +2,8 @@ import enum
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -60,3 +60,29 @@ class Recording(Base):
         nullable=False,
         default=lambda: datetime.now(UTC),
     )
+    segments: Mapped[list["Segment"]] = relationship(
+        "Segment",
+        back_populates="recording",
+        order_by="Segment.segment_index",
+        cascade="all, delete-orphan",
+    )
+
+
+class Segment(Base):
+    __tablename__ = "segments"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    recording_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("recordings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    start_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    end_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    speaker_label: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    segment_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    recording: Mapped["Recording"] = relationship("Recording", back_populates="segments")
