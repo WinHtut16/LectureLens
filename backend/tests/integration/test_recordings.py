@@ -6,7 +6,7 @@ ARQ enqueue is patched — we don't want to hit real Redis or run the worker.
 """
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient

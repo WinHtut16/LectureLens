@@ -2,8 +2,6 @@
 
 import struct
 
-import pytest
-
 from app.ml.audio_validator import validate_audio
 
 _MAX = 50 * 1024 * 1024  # 50 MB

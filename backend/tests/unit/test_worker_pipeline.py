@@ -3,8 +3,6 @@
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from app.db.models import Recording, RecordingStatus
 from app.worker.pipeline import process_recording
 
