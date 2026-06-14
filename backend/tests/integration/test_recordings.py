@@ -5,7 +5,9 @@ Storage is patched to LocalStorageClient (tmp_path) — we don't want to hit rea
 ARQ enqueue is patched — we don't want to hit real Redis or run the worker.
 """
 
+import io
 import uuid
+import wave
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -128,7 +130,10 @@ async def test_get_own_recording_returns_200(http_client: AsyncClient):
 
     resp = await http_client.get(f"/api/v1/recordings/{rec_id}", headers=_auth(token))
     assert resp.status_code == 200
-    assert resp.json()["id"] == rec_id
+    body = resp.json()
+    assert body["id"] == rec_id
+    assert "segments" in body
+    assert isinstance(body["segments"], list)  # empty [] before pipeline runs
 
 
 async def test_get_other_users_recording_returns_403(http_client: AsyncClient):
@@ -198,3 +203,83 @@ async def test_delete_other_users_recording_returns_403(http_client: AsyncClient
     # Alice's recording still exists
     check = await http_client.get(f"/api/v1/recordings/{alice_rec_id}", headers=_auth(alice_token))
     assert check.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Slow end-to-end pipeline test (excluded from the default run)
+# ---------------------------------------------------------------------------
+
+
+def _make_tiny_wav() -> bytes:
+    """Generate a 1-second silent WAV (44100 Hz, mono, 16-bit) using stdlib only."""
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(44100)
+        w.writeframes(b"\x00" * 44100 * 2)
+    return buf.getvalue()
+
+
+@pytest.mark.slow
+async def test_pipeline_transcribes_real_audio_end_to_end(
+    http_client: AsyncClient,
+    tmp_path,
+):
+    """Full pipeline with real faster-whisper: 1s silent WAV → status=ready.
+
+    Excluded from the default run (-m 'not slow'). Runs in CI on the slow job only.
+    """
+    from sqlalchemy import select as sa_select
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    from sqlalchemy.orm import selectinload
+    from sqlalchemy.pool import NullPool
+
+    from app.core.config import settings
+    from app.db.models import Recording, RecordingStatus, Segment
+    from app.ml.transcriber import FasterWhisperTranscriber
+    from app.worker.pipeline import process_recording
+
+    engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+    SessionFactory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    token = await _signup_and_token(http_client, "slow@test.com")
+    storage = LocalStorageClient(base_path=str(tmp_path))
+
+    wav_bytes = _make_tiny_wav()
+    with (
+        patch("app.api.recordings.validate_audio", return_value=_VALID_RESULT),
+        patch("app.api.recordings._get_arq_pool", new_callable=AsyncMock) as mock_pool_fn,
+    ):
+        mock_pool = AsyncMock()
+        mock_pool_fn.return_value = mock_pool
+        app.dependency_overrides[get_storage] = lambda: storage
+        resp = await http_client.post(
+            "/api/v1/recordings",
+            files={"file": ("silence.wav", wav_bytes, "audio/wav")},
+            headers=_auth(token),
+        )
+        app.dependency_overrides.pop(get_storage, None)
+
+    assert resp.status_code == 201
+    recording_id = resp.json()["id"]
+
+    transcriber = FasterWhisperTranscriber(model_size="tiny")
+    ctx = {
+        "db_session_factory": SessionFactory,
+        "storage": storage,
+        "transcriber": transcriber,
+    }
+    await process_recording(ctx, recording_id)
+
+    async with SessionFactory() as sess:
+        rec = await sess.scalar(
+            sa_select(Recording)
+            .where(Recording.id == uuid.UUID(recording_id))
+            .options(selectinload(Recording.segments))
+        )
+        assert rec is not None
+        assert rec.status == RecordingStatus.ready
+        assert isinstance(rec.segments, list)
+
+    await engine.dispose()

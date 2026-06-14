@@ -33,8 +33,8 @@ async def setup_and_clean_db():
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with _test_engine.begin() as conn:
-        # Delete child rows first (FK: recordings.user_id → users.id CASCADE, but explicit order
-        # keeps things predictable if CASCADE is not wired in the test DB).
+        # Delete in FK order: segments → recordings → users
+        await conn.execute(text("DELETE FROM segments"))
         await conn.execute(text("DELETE FROM recordings"))
         await conn.execute(text("DELETE FROM users"))
 
