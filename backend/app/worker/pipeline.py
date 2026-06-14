@@ -11,6 +11,7 @@ Real Whisper/embedding stages land in Slice 4.
 import asyncio
 import logging
 import uuid
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -27,7 +28,7 @@ def _make_session() -> async_sessionmaker[AsyncSession]:
     return async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
-async def process_recording(ctx: dict, recording_id: str) -> None:
+async def process_recording(ctx: dict[str, Any], recording_id: str) -> None:
     """ARQ task: run the processing pipeline for one recording."""
     SessionLocal = ctx.get("db_session_factory") or _make_session()
     rec_uuid = uuid.UUID(recording_id)

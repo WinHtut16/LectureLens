@@ -8,6 +8,7 @@ Two backends:
 import asyncio
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
 from app.core.config import Settings
 
@@ -45,8 +46,8 @@ class S3StorageClient(StorageClient):
         self._access_key = access_key
         self._secret_key = secret_key
 
-    def _make_client(self):  # type: ignore[no-untyped-def]
-        import boto3  # local import — only needed for S3 backend
+    def _make_client(self) -> Any:
+        import boto3  # type: ignore[import-untyped]  # no stubs available
 
         return boto3.client(
             "s3",
