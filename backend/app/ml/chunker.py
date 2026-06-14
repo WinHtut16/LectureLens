@@ -65,9 +65,6 @@ def chunk_segments(
             if segments[k].start <= overlap_boundary:
                 next_i = k
                 break
-        if next_i <= i:
-            next_i = i + 1  # safety: always advance
-
         i = next_i
 
     return chunks
