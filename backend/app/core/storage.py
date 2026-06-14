@@ -19,6 +19,10 @@ class StorageClient(ABC):
         """Upload data at *key* and return the key."""
 
     @abstractmethod
+    async def download_file(self, key: str) -> bytes:
+        """Download the object at *key* and return its bytes. Raises FileNotFoundError if missing."""
+
+    @abstractmethod
     async def delete_file(self, key: str) -> None:
         """Delete the object at *key*. No-op if it does not exist."""
 
@@ -32,6 +36,12 @@ class LocalStorageClient(StorageClient):
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
         return key
+
+    async def download_file(self, key: str) -> bytes:
+        target = self._base / key
+        if not target.exists():
+            raise FileNotFoundError(f"Storage key not found: {key}")
+        return target.read_bytes()
 
     async def delete_file(self, key: str) -> None:
         target = self._base / key
@@ -60,6 +70,15 @@ class S3StorageClient(StorageClient):
         client = self._make_client()
         await asyncio.to_thread(client.put_object, Bucket=self._bucket, Key=key, Body=data)
         return key
+
+    async def download_file(self, key: str) -> bytes:
+        client = self._make_client()
+
+        def _get() -> bytes:
+            response = client.get_object(Bucket=self._bucket, Key=key)
+            return response["Body"].read()  # type: ignore[no-any-return]
+
+        return await asyncio.to_thread(_get)
 
     async def delete_file(self, key: str) -> None:
         client = self._make_client()

@@ -37,3 +37,16 @@ async def test_delete_removes_file(storage, tmp_path):
 async def test_delete_nonexistent_file_is_noop(storage):
     # Should not raise even if the file never existed
     await storage.delete_file("does/not/exist.mp3")
+
+
+async def test_download_returns_uploaded_bytes(storage, tmp_path):
+    data = b"audio content for download"
+    await storage.upload_file("audio/user1/rec.wav", data)
+
+    downloaded = await storage.download_file("audio/user1/rec.wav")
+    assert downloaded == data
+
+
+async def test_download_missing_file_raises(storage):
+    with pytest.raises(FileNotFoundError):
+        await storage.download_file("does/not/exist.mp3")
