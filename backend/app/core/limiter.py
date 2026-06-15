@@ -13,9 +13,7 @@ def _get_user_key(request: Request) -> str:
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         try:
-            payload = jwt.decode(
-                auth[7:], settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
-            )
+            payload = jwt.decode(auth[7:], settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             return f"user:{payload['sub']}"
         except (JWTError, KeyError):
             pass

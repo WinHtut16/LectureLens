@@ -16,7 +16,6 @@ from app.ml.transcriber import MockTranscriber, TranscriptSegment
 from app.ml.vector_store import MockVectorStore
 from app.worker.pipeline import process_recording
 
-
 # ---------------------------------------------------------------------------
 # Helpers  (same pattern as test_worker_pipeline.py)
 # ---------------------------------------------------------------------------

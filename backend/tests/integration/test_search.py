@@ -30,7 +30,9 @@ _SEGMENTS = [
 
 
 async def _signup_and_token(client: AsyncClient, email: str) -> str:
-    resp = await client.post("/api/v1/auth/signup", json={"email": email, "password": "password1234"})
+    resp = await client.post(
+        "/api/v1/auth/signup", json={"email": email, "password": "password1234"}
+    )
     assert resp.status_code == 201
     return resp.json()["token"]
 
@@ -76,9 +78,7 @@ async def search_test_setup(tmp_path):
         recording_id = await _upload_recording(client, token)
 
         engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
-        SessionFactory = async_sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        SessionFactory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         ctx = {
             "db_session_factory": SessionFactory,

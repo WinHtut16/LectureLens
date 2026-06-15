@@ -7,6 +7,7 @@ from app.ml.embedder import MockEmbedder
 
 def test_mock_embedder_satisfies_protocol():
     from app.ml.embedder import EmbedderProtocol
+
     assert isinstance(MockEmbedder(), EmbedderProtocol)
 
 

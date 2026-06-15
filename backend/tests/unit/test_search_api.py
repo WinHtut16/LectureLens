@@ -15,7 +15,6 @@ from app.ml.embedder import MockEmbedder
 from app.ml.vector_store import MockVectorStore
 from app.services.search_service import SearchHit
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
