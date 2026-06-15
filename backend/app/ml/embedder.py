@@ -40,7 +40,7 @@ class Embedder:
         return self.embed([text])[0]
 
 
-class MockEmbedder:
+class MockEmbedder(EmbedderProtocol):
     """Deterministic L2-unit-vector embeddings for tests — no model loaded."""
 
     DIM: int = 384
