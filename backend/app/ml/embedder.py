@@ -4,7 +4,7 @@ SentenceTransformer is imported lazily inside Embedder.__init__ so this
 module is safe to import in unit tests without triggering a model download.
 """
 
-from typing import Protocol, runtime_checkable
+from typing import Protocol, cast, runtime_checkable
 
 import numpy as np
 
@@ -21,7 +21,7 @@ class Embedder:
     DIM: int = 384
 
     def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
-        from sentence_transformers import SentenceTransformer  # type: ignore[import-untyped]
+        from sentence_transformers import SentenceTransformer
 
         self._model = SentenceTransformer(model_name)
 
@@ -37,7 +37,7 @@ class Embedder:
 
     def embed_one(self, text: str) -> np.ndarray:
         """Return shape (384,)."""
-        return self.embed([text])[0]
+        return cast(np.ndarray, self.embed([text])[0])
 
 
 class MockEmbedder(EmbedderProtocol):
@@ -54,4 +54,4 @@ class MockEmbedder(EmbedderProtocol):
         return vecs
 
     def embed_one(self, text: str) -> np.ndarray:
-        return self.embed([text])[0]
+        return cast(np.ndarray, self.embed([text])[0])

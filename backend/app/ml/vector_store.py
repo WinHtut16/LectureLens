@@ -15,7 +15,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
-import faiss  # type: ignore[import-untyped]
+import faiss
 import numpy as np
 
 
