@@ -12,6 +12,8 @@ from app.core.security import decode_access_token
 from app.core.storage import StorageClient, make_storage_client
 from app.db.models import User
 from app.db.session import get_db
+from app.ml.embedder import Embedder, EmbedderProtocol
+from app.ml.vector_store import VectorStore
 
 # auto_error=False: missing Authorization header yields None instead of FastAPI's
 # default 403, so we can raise a proper 401 ourselves.
@@ -54,12 +56,6 @@ def _storage_singleton() -> StorageClient:
 
 def get_storage() -> StorageClient:
     return _storage_singleton()
-
-
-import os
-
-from app.ml.embedder import Embedder, EmbedderProtocol
-from app.ml.vector_store import VectorStore
 
 
 @lru_cache(maxsize=1)

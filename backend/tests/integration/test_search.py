@@ -13,7 +13,6 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.config import settings
 from app.core.deps import get_embedder, get_storage, get_vector_store
-from app.db.models import RecordingStatus
 from app.main import app
 from app.ml.audio_validator import AudioValidationResult
 from app.ml.embedder import MockEmbedder

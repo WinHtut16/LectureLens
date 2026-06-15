@@ -6,7 +6,7 @@ import tempfile
 import numpy as np
 import pytest
 
-from app.ml.vector_store import SearchResult, VectorStore, MockVectorStore, VectorStoreProtocol
+from app.ml.vector_store import VectorStore, MockVectorStore, VectorStoreProtocol
 
 
 def _unit_vec(dim: int = 384, hot: int = 0) -> np.ndarray:

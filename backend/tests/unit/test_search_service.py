@@ -4,13 +4,12 @@ import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
-import numpy as np
 import pytest
 
 from app.db.models import Recording, RecordingStatus, Segment, SourceType
 from app.ml.embedder import MockEmbedder
-from app.ml.vector_store import MockVectorStore, SearchResult
-from app.services.search_service import SearchHit, search_recording
+from app.ml.vector_store import MockVectorStore
+from app.services.search_service import search_recording
 
 
 # ---------------------------------------------------------------------------
