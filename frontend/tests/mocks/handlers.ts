@@ -151,7 +151,7 @@ export const handlers = [
   }),
 
   http.post(`${BASE}/recordings/:id/search`, async ({ request }) => {
-    const body = (await request.json()) as { query: string; limit?: number; speaker?: string }
+    const body = (await request.json()) as { query: string; k?: number; speaker_label?: string }
     if (!body.query.trim()) {
       return HttpResponse.json(
         { error: { code: 'validation_error', message: 'Query cannot be empty' } },

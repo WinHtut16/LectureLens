@@ -107,8 +107,8 @@ export function searchRecording(
     token,
     body: JSON.stringify({
       query,
-      limit: k,
-      ...(speakerLabel != null ? { speaker: speakerLabel } : {}),
+      k,
+      ...(speakerLabel != null ? { speaker_label: speakerLabel } : {}),
     }),
   })
 }
