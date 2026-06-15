@@ -264,11 +264,16 @@ async def test_pipeline_transcribes_real_audio_end_to_end(
     assert resp.status_code == 201
     recording_id = resp.json()["id"]
 
+    from app.ml.embedder import MockEmbedder
+    from app.ml.vector_store import MockVectorStore
+
     transcriber = FasterWhisperTranscriber(model_size="tiny")
     ctx = {
         "db_session_factory": SessionFactory,
         "storage": storage,
         "transcriber": transcriber,
+        "embedder": MockEmbedder(),
+        "vector_store": MockVectorStore(),
     }
     await process_recording(ctx, recording_id)
 
