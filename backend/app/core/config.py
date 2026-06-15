@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # ML
     WHISPER_MODEL_SIZE: str = "base"
+    FAISS_INDEX_PATH: str = "/tmp/lecturelens/faiss.index"  # nosec B108 — dev default
 
     # Upload limits
     MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB

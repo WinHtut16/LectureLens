@@ -54,3 +54,30 @@ def _storage_singleton() -> StorageClient:
 
 def get_storage() -> StorageClient:
     return _storage_singleton()
+
+
+import os
+
+from app.ml.embedder import Embedder, EmbedderProtocol
+from app.ml.vector_store import VectorStore
+
+
+@lru_cache(maxsize=1)
+def _embedder_singleton() -> EmbedderProtocol:
+    return Embedder()
+
+
+def get_embedder() -> EmbedderProtocol:
+    return _embedder_singleton()
+
+
+@lru_cache(maxsize=1)
+def _vector_store_singleton() -> VectorStore:
+    vs = VectorStore()
+    if os.path.exists(settings.FAISS_INDEX_PATH):
+        vs.load(settings.FAISS_INDEX_PATH)
+    return vs
+
+
+def get_vector_store() -> VectorStore:
+    return _vector_store_singleton()
