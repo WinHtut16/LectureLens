@@ -16,6 +16,16 @@ class WorkerSettings:
 
     @staticmethod
     async def on_startup(ctx: dict[str, Any]) -> None:
+        import os
+
+        from app.ml.embedder import Embedder
+        from app.ml.vector_store import VectorStore
+
         ctx["transcriber"] = FasterWhisperTranscriber(model_size=settings.WHISPER_MODEL_SIZE)
         ctx["storage"] = make_storage_client(settings)
         ctx["db_session_factory"] = _make_session()
+        ctx["embedder"] = Embedder()
+        vs = VectorStore()
+        if os.path.exists(settings.FAISS_INDEX_PATH):
+            vs.load(settings.FAISS_INDEX_PATH)
+        ctx["vector_store"] = vs

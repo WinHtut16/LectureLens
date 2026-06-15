@@ -25,7 +25,9 @@ from app.core.config import settings
 from app.core.storage import StorageClient
 from app.db.models import Recording, RecordingStatus, Segment
 from app.ml.chunker import chunk_segments
+from app.ml.embedder import EmbedderProtocol
 from app.ml.transcriber import TranscriberProtocol
+from app.ml.vector_store import VectorStoreProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -67,20 +69,42 @@ async def process_recording(ctx: dict[str, Any], recording_id: str) -> None:
 
             # ── Chunking + persistence ──────────────────────────────────────
             chunks = chunk_segments(raw_segments)
+            added_segments: list[Segment] = []
             for idx, chunk in enumerate(chunks):
-                session.add(
-                    Segment(
-                        recording_id=rec_uuid,
-                        start_seconds=chunk.start,
-                        end_seconds=chunk.end,
-                        text=chunk.text,
-                        speaker_label=None,
-                        segment_index=idx,
-                    )
+                seg = Segment(
+                    id=uuid.uuid4(),
+                    recording_id=rec_uuid,
+                    start_seconds=chunk.start,
+                    end_seconds=chunk.end,
+                    text=chunk.text,
+                    speaker_label=None,
+                    segment_index=idx,
                 )
+                session.add(seg)
+                added_segments.append(seg)
 
             if raw_segments:
                 recording.duration_seconds = int(raw_segments[-1].end)
+
+            # ── Stage 2: embedding ──────────────────────────────────────────
+            recording.status = RecordingStatus.embedding
+            await session.commit()
+
+            embedder: EmbedderProtocol = ctx["embedder"]
+            vector_store: VectorStoreProtocol = ctx["vector_store"]
+
+            if added_segments:
+                texts = [s.text for s in added_segments]
+                vectors = await asyncio.to_thread(embedder.embed, texts)
+                for seg, vec in zip(added_segments, vectors):
+                    vector_store.add(
+                        segment_id=str(seg.id),
+                        recording_id=str(seg.recording_id),
+                        start_seconds=seg.start_seconds,
+                        speaker_label=seg.speaker_label,
+                        vector=vec,
+                    )
+                await asyncio.to_thread(vector_store.save, settings.FAISS_INDEX_PATH)
 
             # ── Advance to ready ────────────────────────────────────────────
             recording.status = RecordingStatus.ready

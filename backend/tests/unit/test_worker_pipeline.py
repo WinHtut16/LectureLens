@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.db.models import Recording, RecordingStatus
+from app.ml.embedder import MockEmbedder
 from app.ml.transcriber import MockTranscriber, TranscriptSegment
+from app.ml.vector_store import MockVectorStore
 from app.worker.pipeline import process_recording
 
 # ---------------------------------------------------------------------------
@@ -66,6 +68,8 @@ async def test_happy_path_inserts_segments_and_sets_ready():
         "db_session_factory": factory,
         "storage": storage,
         "transcriber": transcriber,
+        "embedder": MockEmbedder(),
+        "vector_store": MockVectorStore(),
     }
 
     with (
@@ -104,6 +108,8 @@ async def test_happy_path_status_transitions_in_order():
         "db_session_factory": factory,
         "storage": storage,
         "transcriber": transcriber,
+        "embedder": MockEmbedder(),
+        "vector_store": MockVectorStore(),
     }
 
     with (
@@ -116,6 +122,7 @@ async def test_happy_path_status_transitions_in_order():
         await process_recording(ctx, str(rec.id))
 
     assert RecordingStatus.transcribing in statuses_at_commit
+    assert RecordingStatus.embedding in statuses_at_commit
     assert statuses_at_commit[-1] == RecordingStatus.ready
     t_idx = statuses_at_commit.index(RecordingStatus.transcribing)
     r_idx = len(statuses_at_commit) - 1 - statuses_at_commit[::-1].index(RecordingStatus.ready)
@@ -158,6 +165,8 @@ async def test_transcriber_raises_sets_failed_and_reraises():
         "db_session_factory": factory,
         "storage": storage,
         "transcriber": boom_transcriber,
+        "embedder": MockEmbedder(),
+        "vector_store": MockVectorStore(),
     }
 
     with (
@@ -186,6 +195,8 @@ async def test_pipeline_noop_when_recording_not_found():
         "db_session_factory": factory,
         "storage": storage,
         "transcriber": MockTranscriber(),
+        "embedder": MockEmbedder(),
+        "vector_store": MockVectorStore(),
     }
     # Should not raise
     await process_recording(ctx, str(uuid.uuid4()))
@@ -201,6 +212,8 @@ async def test_empty_transcript_sets_ready_with_no_segments():
         "db_session_factory": factory,
         "storage": storage,
         "transcriber": MockTranscriber(segments=[]),
+        "embedder": MockEmbedder(),
+        "vector_store": MockVectorStore(),
     }
 
     with (
