@@ -31,7 +31,7 @@ _SEGMENTS = [
 
 
 async def _signup_and_token(client: AsyncClient, email: str) -> str:
-    resp = await client.post("/api/v1/auth/signup", json={"email": email, "password": "pass1234"})
+    resp = await client.post("/api/v1/auth/signup", json={"email": email, "password": "password1234"})
     assert resp.status_code == 201
     return resp.json()["token"]
 
