@@ -4,6 +4,7 @@ import type {
   RecordingDetailResponse,
   RecordingListItem,
   RecordingStatusResponse,
+  SearchResponse,
 } from '@/lib/types'
 
 const API_BASE =
@@ -91,5 +92,23 @@ export function uploadRecording(token: string, file: File): Promise<RecordingCre
     method: 'POST',
     body: form,
     token,
+  })
+}
+
+export function searchRecording(
+  token: string,
+  id: string,
+  query: string,
+  k = 10,
+  speakerLabel?: string | null,
+): Promise<SearchResponse> {
+  return request<SearchResponse>(`/recordings/${id}/search`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({
+      query,
+      limit: k,
+      ...(speakerLabel != null ? { speaker: speakerLabel } : {}),
+    }),
   })
 }

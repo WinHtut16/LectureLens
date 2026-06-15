@@ -60,3 +60,17 @@ export interface RecordingCreatedResponse {
   title: string
   status: RecordingStatus
 }
+
+export interface SearchResult {
+  segment_id: string
+  start_seconds: number
+  end_seconds: number
+  text: string
+  score: number
+  speaker_label: string | null
+}
+
+export interface SearchResponse {
+  results: SearchResult[]
+  query_time_ms: number
+}
