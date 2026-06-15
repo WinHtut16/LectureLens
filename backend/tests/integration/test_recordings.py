@@ -236,7 +236,7 @@ async def test_pipeline_transcribes_real_audio_end_to_end(
     from sqlalchemy.pool import NullPool
 
     from app.core.config import settings
-    from app.db.models import Recording, RecordingStatus, Segment
+    from app.db.models import Recording, RecordingStatus
     from app.ml.transcriber import FasterWhisperTranscriber
     from app.worker.pipeline import process_recording
 

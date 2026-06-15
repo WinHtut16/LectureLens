@@ -1,8 +1,6 @@
 """Unit tests for chunk_segments — no mocks needed; this is pure list logic."""
 
-import pytest
-
-from app.ml.chunker import TranscriptChunk, chunk_segments
+from app.ml.chunker import chunk_segments
 from app.ml.transcriber import TranscriptSegment
 
 
