@@ -1,14 +1,17 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import { redirect, useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { getRecording } from '@/lib/api'
+import { getRecording, searchRecording } from '@/lib/api'
 import { AudioPlayer, useAudioPlayer } from '@/components/player/AudioPlayer'
 import { TranscriptPanel } from '@/components/player/TranscriptPanel'
+import { SearchBar } from '@/components/SearchBar/SearchBar'
+import { SearchResults } from '@/components/SearchResults/SearchResults'
 import { StatusBadge } from '@/components/recordings/StatusBadge'
 import { formatDuration } from '@/lib/utils'
-import type { Segment } from '@/lib/types'
+import type { SearchResult, Segment } from '@/lib/types'
 
 interface Props {
   params: { id: string }
@@ -19,6 +22,10 @@ export default function RecordingDetailPage({ params }: Props) {
   const router = useRouter()
   const player = useAudioPlayer()
 
+  // Search state — lives here so both SearchResults and TranscriptPanel can read it
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null)
+
   if (!token) redirect('/login')
 
   const { data: recording, isLoading, error } = useQuery({
@@ -26,6 +33,47 @@ export default function RecordingDetailPage({ params }: Props) {
     queryFn: () => getRecording(token, params.id),
     enabled: !!token,
   })
+
+  const {
+    mutate: runSearch,
+    data: searchData,
+    isPending: isSearching,
+    error: searchError,
+    reset: resetSearch,
+  } = useMutation({
+    mutationFn: ({ query, speaker }: { query: string; speaker: string | null }) =>
+      searchRecording(token, params.id, query, 10, speaker),
+  })
+
+  // Derive unique non-null speaker labels from segments
+  const speakers = useMemo<string[]>(
+    () => [
+      ...new Set(
+        (recording?.segments ?? [])
+          .map((s) => s.speaker_label)
+          .filter((l): l is string => l !== null),
+      ),
+    ],
+    [recording],
+  )
+
+  function handleSearch(query: string, speakerLabel: string | null) {
+    setSearchQuery(query)
+    setActiveSegmentId(null)
+    runSearch({ query, speaker: speakerLabel })
+  }
+
+  function handleSearchClear() {
+    setSearchQuery('')
+    setActiveSegmentId(null)
+    resetSearch()
+  }
+
+  function handleResultClick(result: SearchResult) {
+    setActiveSegmentId(result.segment_id)
+    player.seekTo(result.start_seconds)
+    void player.audioRef.current?.play()
+  }
 
   function handleSegmentClick(segment: Segment) {
     player.seekTo(segment.start_seconds)
@@ -107,6 +155,32 @@ export default function RecordingDetailPage({ params }: Props) {
           </div>
         )}
 
+        {/* Search — only when recording is ready */}
+        {recording.status === 'ready' && (
+          <section aria-label="Search">
+            <SearchBar
+              onSearch={handleSearch}
+              onClear={handleSearchClear}
+              isLoading={isSearching}
+              speakers={speakers}
+            />
+            {(searchQuery || isSearching) && (
+              <div className="mt-4">
+                <SearchResults
+                  results={searchData?.results ?? []}
+                  queryTimeMs={searchData?.query_time_ms ?? 0}
+                  isLoading={isSearching}
+                  error={searchError as Error | null}
+                  query={searchQuery}
+                  activeResultId={activeSegmentId}
+                  onResultClick={handleResultClick}
+                  onRetry={() => runSearch({ query: searchQuery, speaker: null })}
+                />
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Transcript */}
         {recording.status === 'ready' && recording.segments.length > 0 && (
           <section aria-label="Transcript">
@@ -117,6 +191,9 @@ export default function RecordingDetailPage({ params }: Props) {
               segments={recording.segments}
               currentTime={player.currentTime}
               onSegmentClick={handleSegmentClick}
+              highlightedIds={
+                searchData ? new Set(searchData.results.map((r) => r.segment_id)) : undefined
+              }
             />
           </section>
         )}
