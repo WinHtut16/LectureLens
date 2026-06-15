@@ -1,7 +1,13 @@
-"""FAISS-backed in-memory vector store with per-vector metadata for filtered search.
+"""FAISS-backed vector store with one index per recording for correct pre-filtering.
 
-Vectors must be L2-normalised before insertion (Embedder guarantees this),
-so IndexFlatIP inner-product scores equal cosine similarity.
+Each recording has its own IndexFlatIP so searches are scoped to the recording
+before ranking — not post-filtered from a global index.  Vectors must be
+L2-normalised before insertion (Embedder guarantees this), so IndexFlatIP
+inner-product scores equal cosine similarity.
+
+When constructed with index_dir, search() loads per-recording index files from
+disk on first access so worker writes are always visible to the API without a
+restart.
 """
 
 import json
@@ -46,12 +52,17 @@ class VectorStoreProtocol(Protocol):
 
 
 class VectorStore:
-    """In-memory FAISS IndexFlatIP with parallel metadata list."""
+    """Per-recording FAISS IndexFlatIP — searches are scoped to the target recording."""
 
-    def __init__(self, dim: int = 384) -> None:
+    def __init__(self, dim: int = 384, index_dir: str | None = None) -> None:
         self._dim = dim
-        self._index: faiss.Index = faiss.IndexFlatIP(dim)
-        self._meta: list[dict[str, Any]] = []
+        # If set, search() loads missing recording indexes from this directory on demand.
+        self._index_dir = index_dir
+        self._per_recording: dict[str, tuple[faiss.Index, list[dict[str, Any]]]] = {}
+
+    # ------------------------------------------------------------------
+    # Write
+    # ------------------------------------------------------------------
 
     def add(
         self,
@@ -61,8 +72,11 @@ class VectorStore:
         speaker_label: str | None,
         vector: np.ndarray,
     ) -> None:
-        self._index.add(np.array(vector, dtype=np.float32).reshape(1, -1))
-        self._meta.append(
+        if recording_id not in self._per_recording:
+            self._per_recording[recording_id] = (faiss.IndexFlatIP(self._dim), [])
+        index, meta = self._per_recording[recording_id]
+        index.add(np.array(vector, dtype=np.float32).reshape(1, -1))
+        meta.append(
             {
                 "segment_id": segment_id,
                 "recording_id": recording_id,
@@ -71,6 +85,28 @@ class VectorStore:
             }
         )
 
+    # ------------------------------------------------------------------
+    # Read
+    # ------------------------------------------------------------------
+
+    def _get_recording_data(
+        self, recording_id: str
+    ) -> tuple[faiss.Index | None, list[dict[str, Any]]]:
+        """Return (index, meta) from memory, loading from disk on cache miss."""
+        if recording_id in self._per_recording:
+            return self._per_recording[recording_id]
+        if self._index_dir is not None:
+            index_path = os.path.join(self._index_dir, f"{recording_id}.index")
+            meta_path = index_path + ".meta.json"
+            if os.path.exists(index_path) and os.path.exists(meta_path):
+                index = faiss.read_index(index_path)
+                with open(meta_path) as f:
+                    loaded_meta: list[dict[str, Any]] = json.load(f)
+                # Cache for this instance's lifetime (integration tests reuse the object).
+                self._per_recording[recording_id] = (index, loaded_meta)
+                return self._per_recording[recording_id]
+        return None, []
+
     def search(
         self,
         query_vector: np.ndarray,
@@ -78,46 +114,62 @@ class VectorStore:
         k: int = 10,
         speaker_label: str | None = None,
     ) -> list[SearchResult]:
-        if self._index.ntotal == 0:
-            return []
-        rid_set = set(recording_ids)
-        # Fetch enough candidates to survive post-filtering
-        search_k = min(self._index.ntotal, max(k * 10, 100))
-        scores, indices = self._index.search(
-            np.array(query_vector, dtype=np.float32).reshape(1, -1), search_k
-        )
-        results: list[SearchResult] = []
-        for score, idx in zip(scores[0], indices[0]):
-            if idx < 0:
-                break
-            meta = self._meta[int(idx)]
-            if meta["recording_id"] not in rid_set:
+        qvec = np.array(query_vector, dtype=np.float32).reshape(1, -1)
+        all_results: list[SearchResult] = []
+
+        for rid in recording_ids:
+            index, meta = self._get_recording_data(rid)
+            if index is None or index.ntotal == 0:
                 continue
-            if speaker_label is not None and meta["speaker_label"] != speaker_label:
-                continue
-            results.append(
-                SearchResult(
-                    segment_id=meta["segment_id"],
-                    recording_id=meta["recording_id"],
-                    start_seconds=meta["start_seconds"],
-                    score=float(score),
-                    speaker_label=meta["speaker_label"],
+            # Overfetch only when a speaker filter will cull some results.
+            fetch_k = min(index.ntotal, k if speaker_label is None else k * 10)
+            scores, indices = index.search(qvec, fetch_k)
+            for score, idx in zip(scores[0], indices[0]):
+                if idx < 0:
+                    break
+                m = meta[int(idx)]
+                if speaker_label is not None and m["speaker_label"] != speaker_label:
+                    continue
+                all_results.append(
+                    SearchResult(
+                        segment_id=m["segment_id"],
+                        recording_id=m["recording_id"],
+                        start_seconds=m["start_seconds"],
+                        score=float(score),
+                        speaker_label=m["speaker_label"],
+                    )
                 )
-            )
-            if len(results) == k:
-                break
-        return results
+
+        all_results.sort(key=lambda r: r.score, reverse=True)
+        return all_results[:k]
+
+    # ------------------------------------------------------------------
+    # Persistence
+    # ------------------------------------------------------------------
 
     def save(self, path: str) -> None:
-        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        faiss.write_index(self._index, path)
-        with open(path + ".meta.json", "w") as f:
-            json.dump(self._meta, f)
+        """Write each recording's index to {path}/{recording_id}.index[.meta.json]."""
+        os.makedirs(path, exist_ok=True)
+        for rid, (index, meta) in self._per_recording.items():
+            faiss.write_index(index, os.path.join(path, f"{rid}.index"))
+            with open(os.path.join(path, f"{rid}.index.meta.json"), "w") as f:
+                json.dump(meta, f)
 
     def load(self, path: str) -> None:
-        self._index = faiss.read_index(path)
-        with open(path + ".meta.json") as f:
-            self._meta = json.load(f)
+        """Eagerly load all recording indexes from a directory (e.g. for pre-warming)."""
+        if not os.path.isdir(path):
+            return
+        for fname in os.listdir(path):
+            if not fname.endswith(".index"):
+                continue
+            rid = fname[: -len(".index")]
+            meta_path = os.path.join(path, fname + ".meta.json")
+            if not os.path.exists(meta_path):
+                continue
+            index = faiss.read_index(os.path.join(path, fname))
+            with open(meta_path) as f:
+                meta: list[dict[str, Any]] = json.load(f)
+            self._per_recording[rid] = (index, meta)
 
 
 class MockVectorStore(VectorStoreProtocol):

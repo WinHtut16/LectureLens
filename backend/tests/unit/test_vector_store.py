@@ -128,11 +128,11 @@ def test_save_load_round_trip():
     vs.add("seg-0", "rec-x", 5.0, "Spk", _unit_vec(hot=3))
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        path = os.path.join(tmpdir, "faiss.index")
-        vs.save(path)
+        index_dir = os.path.join(tmpdir, "faiss")  # save() treats path as directory
+        vs.save(index_dir)
 
         vs2 = VectorStore()
-        vs2.load(path)
+        vs2.load(index_dir)
         results = vs2.search(_unit_vec(hot=3), recording_ids=["rec-x"], k=1)
 
     assert len(results) == 1
@@ -141,6 +141,29 @@ def test_save_load_round_trip():
     assert r.start_seconds == pytest.approx(5.0)
     assert r.speaker_label == "Spk"
     assert r.score == pytest.approx(1.0, abs=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# Lazy disk loading (index_dir)
+# ---------------------------------------------------------------------------
+
+
+def test_search_loads_from_disk_when_index_dir_set():
+    """VectorStore with index_dir loads a recording's index from disk on demand."""
+    writer = VectorStore()
+    writer.add("seg-0", "rec-disk", 0.0, None, _unit_vec(hot=5))
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        index_dir = os.path.join(tmpdir, "faiss")
+        writer.save(index_dir)
+
+        # Fresh instance with no in-memory data — must load from disk
+        reader = VectorStore(index_dir=index_dir)
+        results = reader.search(_unit_vec(hot=5), recording_ids=["rec-disk"], k=1)
+
+    assert len(results) == 1
+    assert results[0].segment_id == "seg-0"
+    assert results[0].score == pytest.approx(1.0, abs=1e-5)
 
 
 # ---------------------------------------------------------------------------

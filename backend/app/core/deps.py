@@ -71,13 +71,8 @@ def get_embedder() -> EmbedderProtocol:
     return _embedder_singleton()
 
 
-@lru_cache(maxsize=1)
-def _vector_store_singleton() -> VectorStore:
-    vs = VectorStore()
-    if os.path.exists(settings.FAISS_INDEX_PATH):
-        vs.load(settings.FAISS_INDEX_PATH)
-    return vs
-
-
 def get_vector_store() -> VectorStore:
-    return _vector_store_singleton()
+    # No singleton: a fresh VectorStore is returned per call with index_dir set,
+    # so search() loads per-recording files from disk on demand and worker writes
+    # are always visible without an API restart.
+    return VectorStore(index_dir=settings.FAISS_INDEX_PATH)

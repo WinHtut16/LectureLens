@@ -16,8 +16,6 @@ class WorkerSettings:
 
     @staticmethod
     async def on_startup(ctx: dict[str, Any]) -> None:
-        import os
-
         from app.ml.embedder import Embedder
         from app.ml.vector_store import VectorStore
 
@@ -25,7 +23,6 @@ class WorkerSettings:
         ctx["storage"] = make_storage_client(settings)
         ctx["db_session_factory"] = _make_session()
         ctx["embedder"] = Embedder()
-        vs = VectorStore()
-        if os.path.exists(settings.FAISS_INDEX_PATH):
-            vs.load(settings.FAISS_INDEX_PATH)
-        ctx["vector_store"] = vs
+        # Worker keeps an in-memory VectorStore; pipeline adds segments then
+        # saves per-recording index files to FAISS_INDEX_PATH for the API to load.
+        ctx["vector_store"] = VectorStore()
