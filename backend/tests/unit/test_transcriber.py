@@ -3,6 +3,7 @@
 FasterWhisperTranscriber is never instantiated here — doing so would trigger
 a model download. We verify the contract through MockTranscriber only.
 """
+
 import pytest
 
 from app.ml.transcriber import MockTranscriber, TranscriptSegment, TranscriberProtocol

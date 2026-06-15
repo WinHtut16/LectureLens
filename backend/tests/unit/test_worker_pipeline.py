@@ -9,7 +9,6 @@ from app.db.models import Recording, RecordingStatus
 from app.ml.transcriber import MockTranscriber, TranscriptSegment
 from app.worker.pipeline import process_recording
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -69,8 +68,10 @@ async def test_happy_path_inserts_segments_and_sets_ready():
         "transcriber": transcriber,
     }
 
-    with patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp, \
-         patch("app.worker.pipeline.os.unlink"):
+    with (
+        patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp,
+        patch("app.worker.pipeline.os.unlink"),
+    ):
         mock_tmp.return_value.__enter__ = MagicMock(return_value=MagicMock(name="/tmp/fake.mp3"))
         mock_tmp.return_value.__exit__ = MagicMock(return_value=False)
         mock_tmp.return_value.__enter__.return_value.name = "/tmp/fake.mp3"
@@ -105,8 +106,10 @@ async def test_happy_path_status_transitions_in_order():
         "transcriber": transcriber,
     }
 
-    with patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp, \
-         patch("app.worker.pipeline.os.unlink"):
+    with (
+        patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp,
+        patch("app.worker.pipeline.os.unlink"),
+    ):
         mock_tmp.return_value.__enter__ = MagicMock(return_value=MagicMock(name="/tmp/fake.mp3"))
         mock_tmp.return_value.__exit__ = MagicMock(return_value=False)
         mock_tmp.return_value.__enter__.return_value.name = "/tmp/fake.mp3"
@@ -157,9 +160,11 @@ async def test_transcriber_raises_sets_failed_and_reraises():
         "transcriber": boom_transcriber,
     }
 
-    with patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp, \
-         patch("app.worker.pipeline.os.unlink"), \
-         pytest.raises(RuntimeError, match="whisper exploded"):
+    with (
+        patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp,
+        patch("app.worker.pipeline.os.unlink"),
+        pytest.raises(RuntimeError, match="whisper exploded"),
+    ):
         mock_tmp.return_value.__enter__ = MagicMock(return_value=MagicMock(name="/tmp/fake.mp3"))
         mock_tmp.return_value.__exit__ = MagicMock(return_value=False)
         mock_tmp.return_value.__enter__.return_value.name = "/tmp/fake.mp3"
@@ -198,8 +203,10 @@ async def test_empty_transcript_sets_ready_with_no_segments():
         "transcriber": MockTranscriber(segments=[]),
     }
 
-    with patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp, \
-         patch("app.worker.pipeline.os.unlink"):
+    with (
+        patch("app.worker.pipeline.tempfile.NamedTemporaryFile") as mock_tmp,
+        patch("app.worker.pipeline.os.unlink"),
+    ):
         mock_tmp.return_value.__enter__ = MagicMock(return_value=MagicMock(name="/tmp/fake.mp3"))
         mock_tmp.return_value.__exit__ = MagicMock(return_value=False)
         mock_tmp.return_value.__enter__.return_value.name = "/tmp/fake.mp3"

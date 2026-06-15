@@ -3,6 +3,7 @@
 WhisperModel is imported lazily inside FasterWhisperTranscriber.__init__ so this
 module is safe to import in unit tests without triggering a model download.
 """
+
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -16,8 +17,7 @@ class TranscriptSegment:
 
 @runtime_checkable
 class TranscriberProtocol(Protocol):
-    def transcribe(self, audio_path: str) -> list[TranscriptSegment]:
-        ...
+    def transcribe(self, audio_path: str) -> list[TranscriptSegment]: ...
 
 
 class FasterWhisperTranscriber:
@@ -30,10 +30,7 @@ class FasterWhisperTranscriber:
 
     def transcribe(self, audio_path: str) -> list[TranscriptSegment]:
         segments, _ = self._model.transcribe(audio_path)
-        return [
-            TranscriptSegment(start=s.start, end=s.end, text=s.text.strip())
-            for s in segments
-        ]
+        return [TranscriptSegment(start=s.start, end=s.end, text=s.text.strip()) for s in segments]
 
 
 class MockTranscriber:

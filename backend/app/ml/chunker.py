@@ -3,6 +3,7 @@
 Merges raw Whisper segments into overlapping windows for embedding.
 See ADR-004 for the rationale behind 30s windows / 5s overlap.
 """
+
 from dataclasses import dataclass, field
 
 from app.ml.transcriber import TranscriptSegment
@@ -38,10 +39,7 @@ def chunk_segments(
 
         # Extend window to include segments whose start < window_start + window_seconds
         j = i
-        while (
-            j + 1 < len(segments)
-            and segments[j + 1].start < window_start_time + window_seconds
-        ):
+        while j + 1 < len(segments) and segments[j + 1].start < window_start_time + window_seconds:
             j += 1
 
         chunk_segs = segments[i : j + 1]
