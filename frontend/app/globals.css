@@ -2,7 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+@layer base {
+  /* Subtle background texture: indigo bloom top-right, amber trace top-left */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% -10%, rgba(110, 140, 255, 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 0% 0%, rgba(242, 193, 78, 0.025) 0%, transparent 60%);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Ensure content sits above the texture layer */
+  #__next,
+  main {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Smooth transitions globally */
+  *,
+  *::before,
+  *::after {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+    }
+  }
 }
