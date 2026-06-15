@@ -15,11 +15,11 @@ test('renders file input with correct accept attribute', () => {
 })
 
 test('calls upload API and fires onUploaded on file select', async () => {
-  const onUploaded = vi.fn<[RecordingCreatedResponse], void>()
+  const onUploaded = vi.fn<(recording: RecordingCreatedResponse) => void>()
   render(<UploadButton token="tok" onUploaded={onUploaded} />)
 
   const file = new File(['audio'], 'test.mp3', { type: 'audio/mpeg' })
-  const input = document.querySelector('input[type="file"]')!
+  const input = document.querySelector('input[type="file"]') as HTMLInputElement
   await userEvent.upload(input, file)
 
   await waitFor(() =>
@@ -38,7 +38,7 @@ test('disables button during upload (loading state)', async () => {
   )
   render(<UploadButton token="tok" onUploaded={vi.fn()} />)
   const file = new File(['a'], 'f.mp3', { type: 'audio/mpeg' })
-  const input = document.querySelector('input[type="file"]')!
+  const input = document.querySelector('input[type="file"]') as HTMLInputElement
 
   userEvent.upload(input, file)
 
@@ -56,7 +56,7 @@ test('shows error text when API returns 413', async () => {
   )
   render(<UploadButton token="tok" onUploaded={vi.fn()} />)
   const file = new File(['huge'], 'big.mp3', { type: 'audio/mpeg' })
-  await userEvent.upload(document.querySelector('input[type="file"]')!, file)
+  await userEvent.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file)
   await waitFor(() =>
     expect(screen.getByRole('alert')).toHaveTextContent('File exceeds 50 MB limit')
   )
@@ -75,7 +75,7 @@ test('shows error text when API returns 415', async () => {
   // Use a valid audio MIME so userEvent doesn't filter it (accept-attribute check).
   // The backend rejection (415) is simulated by the MSW handler above.
   const file = new File(['x'], 'corrupted.mp3', { type: 'audio/mpeg' })
-  await userEvent.upload(document.querySelector('input[type="file"]')!, file)
+  await userEvent.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file)
   await waitFor(() =>
     expect(screen.getByRole('alert')).toHaveTextContent('Unsupported file type')
   )
