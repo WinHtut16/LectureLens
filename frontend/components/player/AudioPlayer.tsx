@@ -1,16 +1,17 @@
 'use client'
 
-import { useAudioPlayer } from '@/lib/hooks/useAudioPlayer'
+import type React from 'react'
 import { formatTimestamp, formatDuration } from '@/lib/utils'
+import type { AudioPlayerControls } from '@/lib/hooks/useAudioPlayer'
 
-interface Props {
+export { useAudioPlayer } from '@/lib/hooks/useAudioPlayer'
+
+interface Props extends AudioPlayerControls {
   src: string
   title?: string
 }
 
-export function AudioPlayer({ src, title }: Props) {
-  const { audioRef, currentTime, isPlaying, duration, seekTo } = useAudioPlayer()
-
+export function AudioPlayer({ src, title, audioRef, currentTime, isPlaying, duration, seekTo }: Props) {
   function handleScrubberClick(e: React.MouseEvent<HTMLDivElement>) {
     if (duration === 0) return
     const rect = e.currentTarget.getBoundingClientRect()
@@ -29,7 +30,6 @@ export function AudioPlayer({ src, title }: Props) {
 
   return (
     <div className="rounded-lg border border-border bg-surface px-5 py-4 space-y-3">
-      {/* Hidden audio element — no native controls */}
       <audio ref={audioRef} src={src} preload="metadata" className="hidden" aria-hidden />
 
       {title && (
@@ -37,7 +37,6 @@ export function AudioPlayer({ src, title }: Props) {
       )}
 
       <div className="flex items-center gap-4">
-        {/* Circular play/pause button */}
         <button
           onClick={togglePlay}
           aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -55,7 +54,6 @@ export function AudioPlayer({ src, title }: Props) {
           )}
         </button>
 
-        {/* Progress bar */}
         <div className="flex-1 space-y-1">
           <div
             role="slider"
