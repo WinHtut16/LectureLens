@@ -96,6 +96,14 @@ Not considered: nation-state, deep supply-chain attacks, physical security.
 | Data retention | User can delete a recording → audio file + segments + embeddings removed. Optional auto-delete after N days. |
 | Search/transcript exposure | Transcripts visible only to the owner; never public. |
 
+## JWT Token Storage (frontend)
+
+The access token is stored exclusively in React component state (`AuthProvider` context) — **never** in `localStorage` or `sessionStorage`. This is intentional:
+
+- Eliminates XSS-based token exfiltration from browser storage.
+- Trade-off: token is lost on page refresh; the user re-authenticates (acceptable for MVP).
+- Next step: add a refresh-token flow via an `httpOnly + Secure + SameSite=Strict` cookie so refresh survives a page reload without exposing the access token to JS.
+
 ## Known limitations / accepted risks
 - Limited monitoring on free tier — a slow distributed brute force may go unnoticed.
 - No 2FA on MVP (low-population demo; documented as future work).
