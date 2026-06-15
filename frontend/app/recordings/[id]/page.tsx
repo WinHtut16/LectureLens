@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { redirect, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -22,11 +22,12 @@ export default function RecordingDetailPage({ params }: Props) {
   const router = useRouter()
   const player = useAudioPlayer()
 
+  if (!token) redirect('/login')
+
   // Search state — lives here so both SearchResults and TranscriptPanel can read it
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null)
-
-  if (!token) redirect('/login')
+  const lastSpeakerRef = useRef<string | null>(null)
 
   const { data: recording, isLoading, error } = useQuery({
     queryKey: ['recording', params.id],
@@ -60,12 +61,14 @@ export default function RecordingDetailPage({ params }: Props) {
   function handleSearch(query: string, speakerLabel: string | null) {
     setSearchQuery(query)
     setActiveSegmentId(null)
+    lastSpeakerRef.current = speakerLabel
     runSearch({ query, speaker: speakerLabel })
   }
 
   function handleSearchClear() {
     setSearchQuery('')
     setActiveSegmentId(null)
+    lastSpeakerRef.current = null
     resetSearch()
   }
 
@@ -174,7 +177,7 @@ export default function RecordingDetailPage({ params }: Props) {
                   query={searchQuery}
                   activeResultId={activeSegmentId}
                   onResultClick={handleResultClick}
-                  onRetry={() => runSearch({ query: searchQuery, speaker: null })}
+                  onRetry={() => runSearch({ query: searchQuery, speaker: lastSpeakerRef.current })}
                 />
               </div>
             )}
