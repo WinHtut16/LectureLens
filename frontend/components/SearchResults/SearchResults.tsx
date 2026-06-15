@@ -60,7 +60,7 @@ export function SearchResults({
   if (results.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-text-muted">
-        No results for <span className="font-medium text-text">"{query}"</span>
+        No results for <span className="font-medium text-text">&ldquo;{query}&rdquo;</span>
       </p>
     )
   }
