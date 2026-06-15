@@ -2,20 +2,25 @@
 
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from arq import ArqRedis, create_pool
 from arq.connections import RedisSettings
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.deps import get_current_user, get_storage
+from app.core.deps import get_current_user, get_embedder, get_storage, get_vector_store
+from app.core.limiter import limiter
 from app.core.storage import StorageClient
 from app.db.models import Recording, RecordingStatus, SourceType, User
 from app.db.session import get_db
 from app.ml.audio_validator import validate_audio
+from app.ml.embedder import EmbedderProtocol
+from app.ml.vector_store import VectorStoreProtocol
 from app.services import recordings as svc
+from app.services import search_service as search_svc
 
 router = APIRouter(prefix="/recordings", tags=["recordings"])
 
@@ -74,6 +79,26 @@ class RecordingStatusResponse(BaseModel):
     error_message: str | None
 
     model_config = {"from_attributes": True}
+
+
+class SearchRequest(BaseModel):
+    query: Annotated[str, Field(min_length=1, max_length=256)]
+    k: Annotated[int, Field(ge=1, le=20)] = 10
+    speaker_label: str | None = None
+
+
+class SearchHitResponse(BaseModel):
+    segment_id: str
+    start_seconds: float
+    end_seconds: float
+    text: str
+    score: float
+    speaker_label: str | None
+
+
+class SearchResponse(BaseModel):
+    results: list[SearchHitResponse]
+    query_time_ms: float
 
 
 # ---------------------------------------------------------------------------
@@ -175,4 +200,41 @@ async def delete_recording(
         recording_id=recording_id,
         user_id=current_user.id,
         storage=storage,
+    )
+
+
+@router.post("/{recording_id}/search", response_model=SearchResponse)
+@limiter.limit("60/minute")
+async def search_recording_endpoint(
+    request: Request,
+    recording_id: uuid.UUID,
+    body: SearchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    embedder: EmbedderProtocol = Depends(get_embedder),
+    vector_store: VectorStoreProtocol = Depends(get_vector_store),
+) -> SearchResponse:
+    hits, query_time_ms = await search_svc.search_recording(
+        db,
+        embedder,
+        vector_store,
+        user_id=current_user.id,
+        recording_id=recording_id,
+        query=body.query,
+        k=body.k,
+        speaker_label=body.speaker_label,
+    )
+    return SearchResponse(
+        results=[
+            SearchHitResponse(
+                segment_id=h.segment_id,
+                start_seconds=h.start_seconds,
+                end_seconds=h.end_seconds,
+                text=h.text,
+                score=h.score,
+                speaker_label=h.speaker_label,
+            )
+            for h in hits
+        ],
+        query_time_ms=query_time_ms,
     )
